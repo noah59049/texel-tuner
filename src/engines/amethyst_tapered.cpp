@@ -21,7 +21,7 @@ EvalResult AmethystEvalTapered::get_fen_eval_result(const std::string& fen) {
     ParameterChessBoard board = ParameterChessBoard::boardFromFENNotation(fen);
     EvalResult result;
     result.coefficients = board.getCoefficients();
-    assert(result.coefficients.size() == 399);
+    assert(result.coefficients.size() == 416);
     result.score = 0;
     return result;
 }
