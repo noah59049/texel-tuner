@@ -2264,147 +2264,98 @@ public:
         }
         return passedPawnCount;
     }
-    int getMiddlegameWeight () const {
-        constexpr const static int TRANSITION_PIECE_VALUES[4] = {13,5,3,3}; // we don't count pawns
-        // Queen is higher than 9 because trading queens matters more to middlegame to endgame transitions than other trades.
-        int mgWeight = 0;
-        for (int pieceType = QUEEN_CODE; pieceType <= KNIGHT_CODE; pieceType++) {
-            mgWeight += TRANSITION_PIECE_VALUES[pieceType] *  __builtin_popcountll(whitePieceTypes[pieceType] | blackPieceTypes[pieceType]);
+
+    int getWhitePassedPawnCountOnRank (int rank) const {
+        int passedPawnCount = 0;
+        unsigned long whitePawnsRemaining = whitePieceTypes[PAWN_CODE];
+        unsigned long thisWhitePawnMask;
+        while (whitePawnsRemaining != 0ULL) {
+            thisWhitePawnMask = whitePawnsRemaining & -whitePawnsRemaining;
+            whitePawnsRemaining -= thisWhitePawnMask;
+            passedPawnCount += (FIRST_RANK << rank & thisWhitePawnMask) != 0ULL and isThisWhitePawnPassed(FastLogarithm::log2(thisWhitePawnMask));
         }
-        return min(70,mgWeight);
-        // If someone has promoted to queens in the opening, then we don't use a higher
-    }
-    int getEndgameWeight () const {
-        return 70 - getMiddlegameWeight();
-    }
-
-    static string getRegressionCSVHeader () {
-        // On second thought, we are using the same transition value for white and black.
-        // If using different transition values makes any significant difference in other eval terms,
-        // Then one side is likely HUGELY winning in material.
-
-        // middlegame king position diffs (64 of them)
-        // endgame king position diffs (64 of them)
-        // middlegame piece on square diffs (64 of them for each piece, 320 total)
-        // endgame piece on square diffs (64 of them for each piece, 320 total)
-        // middlegame mobility diffs for each piece
-        // endgame mobility diffs for each piece
-        // middlegame king attack squares diff for each piece type (5)
-        // endgame king attack squares diff for each piece type (5)
-        // middlegame king shelter diff
-        // endgame king shelter diff
-        // isolated pawn count diff opening
-        // isolated pawn count diff endgame
-        // doubled pawn count diff opening
-        // doubled pawn count diff endgame
-        // passed pawn count diff opening
-        // passed pawn count diff endgame
-
-        // Except it's actually this instead:
-        // king position diffs (64)
-        // piece square diffs (320)
-        // mobility diffs (5)
-        // king zone piece type attack diffs (5)
-        // king shelter diffs (1)
-        // isolated pawn diff (1)
-        // doubled pawn diff (1)
-        // passed pawn count diff (1)
-        // Total: 398 parameters
-
-        // We have the same parameters for the endgame too
-        // Actual total: 796 parameters
-
-        // Let's actually do them in reverse order, so we have the important stuff first
-
-        // passed pawn count diff (1)
-        // doubled pawn count diff (1)
-        // isolated pawn count diff (1)
-        // king shelter diff (1)
-        // king zone piece type attack diffs (5)
-        // mobility diffs (5)
-        // king position diffs (64)
-        // pieces on squares diffs (320)
-        // the whole thing again, for the endgame (398)
-        // is it white to move (1)
-
-        // Note: The piece on square diffs incorporate both piece-square tables and material into the evaluation.
-
-        string start = "mg_pp,mg_dp,mg_ip,mg_ks,mg_Qatk,mg_Ratk,mg_Batk,mg_Natk,mg_Patk,mg_Qmob,mg_Rmob,mg_Bmob,mg_Nmob,mg_Pmob,";
-        for (string pieceInitial : {"k","q","r","b","n","p"}) {
-            for (int square = 0; square < 64; square++) {
-                start += "mg_" + pieceInitial + to_string(square) + ",";
-            }
-        }
-
-        string end = start;
-        end += "wtm";
-
-        // replace every "mg" in end with "eg"
-        for (int i = 0; i < end.size() - 2; i++) {
-            if (end[i] == 'm' and end[i+1] == 'g')
-                end[i] = 'e';
-        }
-
-        return start + end;
+        return passedPawnCount;
     }
 
-    string getRegressionCSVRow () const {
-        // passed pawn count diff (1)
-        // doubled pawn count diff (1)
-        // isolated pawn count diff (1)
-        // king shelter diff (1)
-        // king zone piece type attack diffs (5)
-        // mobility diffs (5)
-        // king position diffs (64)
-        // pieces on squares diffs (320)
-        // the whole thing again, for the endgame (398)
-        // is it white to move (1)
-
-        vector<int> diffs;
-        // Pawn structure
-        diffs.push_back(getWhitePassedPawnCount() - getBlackPassedPawnCount());
-        diffs.push_back(getWhiteDoubledPawnCount() - getBlackDoubledPawnCount());
-        diffs.push_back(getWhiteIsolatedPawnCount() - getBlackIsolatedPawnCount());
-        // Pawn shield
-        diffs.push_back(getWhitePieceShieldCount() - getBlackPieceShieldCount());
-        // Attacking king zone
-        for (int pieceType = QUEEN_CODE; pieceType <= PAWN_CODE; pieceType++) {
-            diffs.push_back(getWhitePieceTypeKingAttackZone(pieceType) - getBlackPieceTypeKingAttackZone(pieceType));
+    int getWhitePassedPawnCountOnFile (int file) const {
+        int passedPawnCount = 0;
+        unsigned long whitePawnsRemaining = whitePieceTypes[PAWN_CODE];
+        unsigned long thisWhitePawnMask;
+        while (whitePawnsRemaining != 0ULL) {
+            thisWhitePawnMask = whitePawnsRemaining & -whitePawnsRemaining;
+            whitePawnsRemaining -= thisWhitePawnMask;
+            passedPawnCount += (A_FILE << 8 * file & thisWhitePawnMask) != 0ULL and isThisWhitePawnPassed(FastLogarithm::log2(thisWhitePawnMask));
         }
-        // Mobility
-        for (int pieceType = QUEEN_CODE; pieceType <= PAWN_CODE; pieceType++) {
-            diffs.push_back(getWhitePieceTypeMobility(pieceType) - getBlackPieceTypeMobility(pieceType));
+        return passedPawnCount;
+    }
+
+    int getBlackPassedPawnCountOnRank (int rank) const {
+        rank ^= 7; // we flip the ranks for black
+
+        int passedPawnCount = 0;
+        unsigned long blackPawnsRemaining = blackPieceTypes[PAWN_CODE];
+        unsigned long thisblackPawnMask;
+        while (blackPawnsRemaining != 0ULL) {
+            thisblackPawnMask = blackPawnsRemaining & -blackPawnsRemaining;
+            blackPawnsRemaining -= thisblackPawnMask;
+            passedPawnCount += (FIRST_RANK << rank & thisblackPawnMask) != 0ULL and isThisBlackPawnPassed(FastLogarithm::log2(thisblackPawnMask));
         }
+        return passedPawnCount;
+    }
 
-        // king piece square tables
-        for (int square = 0; square < 64; square++) {
-            diffs.push_back(getWhiteKingOnSquareCount(square) - getBlackKingOnSquareCount(square));
+    int getBlackPassedPawnCountOnFile (int file) const {
+        int passedPawnCount = 0;
+        unsigned long blackPawnsRemaining = blackPieceTypes[PAWN_CODE];
+        unsigned long thisblackPawnMask;
+        while (blackPawnsRemaining != 0ULL) {
+            thisblackPawnMask = blackPawnsRemaining & -blackPawnsRemaining;
+            blackPawnsRemaining -= thisblackPawnMask;
+            passedPawnCount += (A_FILE << 8 * file & thisblackPawnMask) != 0ULL and isThisBlackPawnPassed(FastLogarithm::log2(thisblackPawnMask));
         }
+        return passedPawnCount;
+    }
 
-        // non-king piece square tables
-        for (int pieceType = QUEEN_CODE; pieceType <= PAWN_CODE; pieceType++) {
-            for (int square = 0; square < 64; square++) {
-                diffs.push_back(getWhitePieceTypeOnSquareCount(pieceType,square) - getBlackPieceTypeOnSquareCount(pieceType,square));
-            }
+    bool doesWhiteHaveBishopPair () const {
+        return __builtin_popcountll(whitePieceTypes[BISHOP_CODE]) >= 2;
+    }
+    bool doesBlackHaveBishopPair () const {
+        return __builtin_popcountll(blackPieceTypes[BISHOP_CODE]) >= 2;
+    }
+
+    int getWhiteProtectedPassedPawnCount () const {
+        int passedPawnCount = 0;
+        unsigned long whitePawnsRemaining = whitePieceTypes[PAWN_CODE];
+        unsigned long thisWhitePawnMask;
+        while (whitePawnsRemaining != 0ULL) {
+            thisWhitePawnMask = whitePawnsRemaining & -whitePawnsRemaining;
+            whitePawnsRemaining -= thisWhitePawnMask;
+            if (getMagicBlackAttackedSquares(PAWN_CODE,FastLogarithm::log2(thisWhitePawnMask),0) & whitePieceTypes[PAWN_CODE])
+                passedPawnCount += isThisWhitePawnPassed(FastLogarithm::log2(thisWhitePawnMask));
         }
-
-        int mgWeight = getMiddlegameWeight();
-        int egWeight = getEndgameWeight();
-
-        string mgRow;
-        string egRow;
-        for (int diff : diffs) {
-            mgRow += to_string(diff * mgWeight) + ",";
-            egRow += to_string(diff * egWeight) + ",";
+        return passedPawnCount;
+    }
+    int getBlackProtectedPassedPawnCount () const {
+        int passedPawnCount = 0;
+        unsigned long blackPawnsRemaining = blackPieceTypes[PAWN_CODE];
+        unsigned long thisBlackPawnMask;
+        while (blackPawnsRemaining != 0ULL) {
+            thisBlackPawnMask = blackPawnsRemaining & -blackPawnsRemaining;
+            blackPawnsRemaining -= thisBlackPawnMask;
+            if (getMagicWhiteAttackedSquares(PAWN_CODE,FastLogarithm::log2(thisBlackPawnMask),0) & blackPieceTypes[PAWN_CODE]);
+                passedPawnCount += isThisBlackPawnPassed(FastLogarithm::log2(thisBlackPawnMask));
         }
-
-        egRow += isItWhiteToMove ? "1" : "0"; // add isItWhiteToMove
-        return mgRow + egRow;
+        return passedPawnCount;
     }
 
     vector<int16_t> getCoefficients () const {
+        // Bishop pair diff (1)
+        // Passed pawn on rank diff (8)
+        // Passed pawn on file diff (8)
+        // Protected passed pawn count diff (1)
+        //// Pawn outside square diff (1)
+
         // is it white to move (1)
-        // passed pawn count diff (1)
+        //// passed pawn count diff (1)
         // doubled pawn count diff (1)
         // isolated pawn count diff (1)
         // king shelter diff (1)
@@ -2414,10 +2365,24 @@ public:
         // pieces on squares diffs (320)
 
         vector<int16_t> diffs;
+        // Bishop pair
+        diffs.push_back(doesWhiteHaveBishopPair() - doesBlackHaveBishopPair());
+        // Passed pawn on rank
+        for (int rank = 0; rank < 8; rank++) {
+            diffs.push_back(getWhitePassedPawnCountOnRank(rank) - getBlackPassedPawnCountOnRank(rank));
+        }
+        // Passed pawn on file
+        for (int file = 0; file < 8; file++) {
+            diffs.push_back(getWhitePassedPawnCountOnFile(file) - getBlackPassedPawnCountOnFile(file));
+        }
+
+        // Protected passed pawn count
+        diffs.push_back(getWhiteProtectedPassedPawnCount() - getBlackProtectedPassedPawnCount());
+
         // Is it white to move
         diffs.push_back(isItWhiteToMove ? 1 : 0);
         // Pawn structure
-        diffs.push_back(getWhitePassedPawnCount() - getBlackPassedPawnCount());
+        //diffs.push_back(getWhitePassedPawnCount() - getBlackPassedPawnCount());
         diffs.push_back(getWhiteDoubledPawnCount() - getBlackDoubledPawnCount());
         diffs.push_back(getWhiteIsolatedPawnCount() - getBlackIsolatedPawnCount());
         // Pawn shield

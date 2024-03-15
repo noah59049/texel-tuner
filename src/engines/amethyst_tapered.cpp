@@ -32,8 +32,14 @@ EvalResult AmethystEvalTapered::get_external_eval_result(const chess::Board &boa
 parameters_t AmethystEvalTapered::get_initial_parameters()
 {
     parameters_t initialParameters;
+    // Bishop pair diff (1)
+    // Passed pawn on rank diff (8)
+    // Passed pawn on file diff (8)
+    // Protected passed pawn count diff (1)
+    //// Pawn outside square diff (1)
+
     // is it white to move (1)
-    // passed pawn count diff (1)
+    //// passed pawn count diff (1)
     // doubled pawn count diff (1)
     // isolated pawn count diff (1)
     // king shelter diff (1)
@@ -42,10 +48,24 @@ parameters_t AmethystEvalTapered::get_initial_parameters()
     // king position diffs (64)
     // pieces on squares diffs (320)
 
+    // Bishop pair
+    initialParameters.push_back({50,50});
+
+    // Passed pawn on rank and file
+    for (int rank = 0; rank < 8; rank++) {
+        initialParameters.push_back({25,25});
+    }
+    for (int file = 0; file < 8; file++) {
+        initialParameters.push_back({25,25});
+    }
+
+    // Protected passed pawn
+    initialParameters.push_back({40,40});
+
     // is it white to move
     initialParameters.push_back({20,20});
-    // passed pawns
-    initialParameters.push_back({50,50});
+    //// passed pawns
+    //initialParameters.push_back({50,50});
     // doubled pawns
     initialParameters.push_back({-30,-30});
     // isolated pawns
@@ -102,8 +122,12 @@ void AmethystEvalTapered::print_parameters(const parameters_t& parameters)
 {
     int index = 0;
     stringstream ss;
+    print_single(ss, parameters,index, "bishop_pair");
+    print_array(ss, parameters, index, "passed_pawn_on_ranks", 8);
+    print_array(ss, parameters, index, "passed_pawn_on_file", 8);
+    print_single(ss, parameters, index, "protected_passed_pawn");
     print_single(ss, parameters, index, "white_to_move");
-    print_single(ss, parameters, index, "passed_pawn");
+//    print_single(ss, parameters, index, "passed_pawn");
     print_single(ss, parameters, index, "doubled_pawn");
     print_single(ss, parameters, index, "isolated_pawn");
     print_single(ss, parameters, index, "king_shelter");
