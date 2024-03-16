@@ -4,6 +4,7 @@
 
 #include "amethyst_tapered.h"
 #include "../amethyst_external/ParameterChessBoard.h"
+#include <cmath>
 
 //using coefficients_t = std::vector<int16_t>;
 // struct EvalResult
@@ -89,14 +90,70 @@ parameters_t AmethystEvalTapered::get_initial_parameters()
     return initialParameters;
 }
 
+//static void print2_parameter(std::stringstream& ss, const pair_t parameter)
+//{
+//    ss << "S(" << lround(parameter[static_cast<int32_t>(PhaseStages::Midgame)]) << ", " << lround(parameter[static_cast<int32_t>(PhaseStages::Endgame)]) << ")";
+////    ss << (uint64_t(uint16_t(int16_t(lround(parameter[static_cast<int32_t>(PhaseStages::Midgame)])))) << 32 | uint64_t(uint16_t(int16_t(lround(parameter[static_cast<int32_t>(PhaseStages::Midgame)]))))) << "ULL";
+//}
+//
+//static void print2_single(std::stringstream& ss, const parameters_t& parameters, int& index, const std::string& name)
+//{
+//    ss << "constexpr uint64_t " << name << " = ";
+//    print2_parameter(ss, parameters[index]);
+//    ss << ";" << endl;
+//    index++;
+//}
+//
+//static void print2_array(std::stringstream& ss, const parameters_t& parameters, int& index, const std::string& name, int count)
+//{
+//    ss << "constexpr uint64_t " << name << "[] = {";
+//    for (auto i = 0; i < count; i++)
+//    {
+//        print2_parameter(ss, parameters[index]);
+//        index++;
+//
+//        if (i != count - 1)
+//        {
+//            ss << ", ";
+//        }
+//    }
+//    ss << "};" << endl;
+//}
+//
+//void print2_parameters(const parameters_t& parameters)
+//{
+//    int index = 0;
+//    stringstream ss;
+//    print2_single(ss, parameters,index, "bishop_pair");
+//    print2_array(ss, parameters, index, "passed_pawn_on_ranks", 8);
+//    print2_array(ss, parameters, index, "passed_pawn_on_file", 8);
+//    print2_single(ss, parameters, index, "protected_passed_pawn");
+//    print2_single(ss, parameters, index, "white_to_move");
+////    print2_single(ss, parameters, index, "passed_pawn");
+//    print2_single(ss, parameters, index, "doubled_pawn");
+//    print2_single(ss, parameters, index, "isolated_pawn");
+//    print2_single(ss, parameters, index, "king_shelter");
+//    print2_array(ss, parameters, index, "king_zone_attacks", 5);
+//    print2_array(ss, parameters, index, "mobility", 5);
+//    print2_array(ss, parameters, index, "king_psts", 64);
+//    print2_array(ss, parameters, index, "queen_psts", 64);
+//    print2_array(ss, parameters, index, "rook_psts", 64);
+//    print2_array(ss, parameters, index, "bishop_psts", 64);
+//    print2_array(ss, parameters, index, "knight_psts", 64);
+//    print2_array(ss, parameters, index, "pawn_psts", 64);
+//
+//    cout << ss.str() << "\n";
+//}
+
 static void print_parameter(std::stringstream& ss, const pair_t parameter)
 {
-    ss << "S(" << parameter[static_cast<int32_t>(PhaseStages::Midgame)] << ", " << parameter[static_cast<int32_t>(PhaseStages::Endgame)] << ")";
+//    ss << "S(" << parameter[static_cast<int32_t>(PhaseStages::Midgame)] << ", " << parameter[static_cast<int32_t>(PhaseStages::Endgame)] << ")";
+    ss << (uint64_t(uint16_t(int16_t(lround(parameter[static_cast<int32_t>(PhaseStages::Midgame)])))) << 32 | uint64_t(uint16_t(int16_t(lround(parameter[static_cast<int32_t>(PhaseStages::Endgame)]))))) << "ULL";
 }
 
 static void print_single(std::stringstream& ss, const parameters_t& parameters, int& index, const std::string& name)
 {
-    ss << "constexpr int " << name << " = ";
+    ss << "constexpr uint64_t " << name << " = ";
     print_parameter(ss, parameters[index]);
     ss << ";" << endl;
     index++;
@@ -104,7 +161,7 @@ static void print_single(std::stringstream& ss, const parameters_t& parameters, 
 
 static void print_array(std::stringstream& ss, const parameters_t& parameters, int& index, const std::string& name, int count)
 {
-    ss << "constexpr int " << name << "[] = {";
+    ss << "constexpr uint64_t " << name << "[] = {";
     for (auto i = 0; i < count; i++)
     {
         print_parameter(ss, parameters[index]);
@@ -120,6 +177,8 @@ static void print_array(std::stringstream& ss, const parameters_t& parameters, i
 
 void AmethystEvalTapered::print_parameters(const parameters_t& parameters)
 {
+//    print2_parameters(parameters);
+
     int index = 0;
     stringstream ss;
     print_single(ss, parameters,index, "bishop_pair");
