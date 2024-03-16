@@ -2341,7 +2341,7 @@ public:
         while (blackPawnsRemaining != 0ULL) {
             thisBlackPawnMask = blackPawnsRemaining & -blackPawnsRemaining;
             blackPawnsRemaining -= thisBlackPawnMask;
-            if (getMagicWhiteAttackedSquares(PAWN_CODE,FastLogarithm::log2(thisBlackPawnMask),0) & blackPieceTypes[PAWN_CODE]);
+            if (getMagicWhiteAttackedSquares(PAWN_CODE,FastLogarithm::log2(thisBlackPawnMask),0) & blackPieceTypes[PAWN_CODE])
                 passedPawnCount += isThisBlackPawnPassed(FastLogarithm::log2(thisBlackPawnMask));
         }
         return passedPawnCount;
