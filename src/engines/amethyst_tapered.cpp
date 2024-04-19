@@ -50,6 +50,15 @@ parameters_t AmethystEvalTapered::get_initial_parameters()
     // king position diffs (64)
     // pieces on squares diffs (320)
 
+    // king zone attack
+    if constexpr (includeHeavisideKingZoneAttacks) {
+        for (int i = 0; i < 5; i++) {
+            initialParameters.push_back({20, 20});
+        }
+    }
+    // Rooks on open files
+    if constexpr (includeRooksOpenFiles)
+        initialParameters.push_back({20,20});
     // Bishop pair
     if constexpr (includeBishopPair)
         initialParameters.push_back({50,50});
@@ -165,6 +174,8 @@ void AmethystEvalTapered::print_parameters(const parameters_t& parameters)
 
     int index = 0;
     stringstream ss;
+    if constexpr (includeRooksOpenFiles)
+        print_single(ss,parameters,index,"rooks_open_files");
     if constexpr (includeBishopPair)
         print_single(ss, parameters,index, "bishop_pair");
     if constexpr (includePassedPawnRanks)

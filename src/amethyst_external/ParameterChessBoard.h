@@ -2190,6 +2190,38 @@ public:
         return kingAttackCount;
     }
 
+    int getHeavisideWhitePieceTypeKingAttackZone (const int pieceType) const {
+        const unsigned long allPieces = allWhitePieces | allBlackPieces;
+        const unsigned long kingZone = getMagicKingAttackedSquares(blackKingPosition) | 1ULL << blackKingPosition;
+        int kingAttackCount = 0;
+        unsigned long piecesRemaining = whitePieceTypes[pieceType];
+        unsigned long thisPieceMask;
+        int thisPieceSquare;
+        while (piecesRemaining != 0ULL) {
+            thisPieceMask = piecesRemaining & -piecesRemaining;
+            piecesRemaining -= thisPieceMask;
+            thisPieceSquare = FastLogarithm::log2(thisPieceMask);
+            kingAttackCount += max(1,__builtin_popcountll(getMagicWhiteAttackedSquares(pieceType,thisPieceSquare,allPieces) & kingZone));
+        }
+        return kingAttackCount;
+    }
+
+    int getHeavisideBlackPieceTypeKingAttackZone (const int pieceType) const {
+        const unsigned long allPieces = allWhitePieces | allBlackPieces;
+        const unsigned long kingZone = getMagicKingAttackedSquares(whiteKingPosition) | 1ULL << whiteKingPosition;
+        int kingAttackCount = 0;
+        unsigned long piecesRemaining = blackPieceTypes[pieceType];
+        unsigned long thisPieceMask;
+        int thisPieceSquare;
+        while (piecesRemaining != 0ULL) {
+            thisPieceMask = piecesRemaining & -piecesRemaining;
+            piecesRemaining -= thisPieceMask;
+            thisPieceSquare = FastLogarithm::log2(thisPieceMask);
+            kingAttackCount += max(1,__builtin_popcountll(getMagicBlackAttackedSquares(pieceType,thisPieceSquare,allPieces) & kingZone));
+        }
+        return kingAttackCount;
+    }
+
     int getWhitePieceShieldCount () const {
         return __builtin_popcountll(kingsafety::WHITE_SHIELD_ZONES[whiteKingPosition] & allWhitePieces) - 1; // we subtract 1 because the king doesn't count as shielding itself
     }
@@ -2366,6 +2398,38 @@ public:
         // pieces on squares diffs (320)
 
         vector<int16_t> diffs;
+        if constexpr (includeHeavisideKingZoneAttacks) {
+            for (int pieceType = QUEEN_CODE; pieceType <= PAWN_CODE; pieceType++) {
+                diffs.push_back(
+                        getHeavisideWhitePieceTypeKingAttackZone(pieceType) - getHeavisideBlackPieceTypeKingAttackZone(pieceType));
+            }
+        }
+        if constexpr (includeRooksOpenFiles) {
+            int16_t rookOpenFileDiff = 0;
+            unsigned long rooksRemaining;
+            unsigned long thisRookMask;
+            int thisRookSquare;
+            // white rooks
+            rooksRemaining = whitePieceTypes[ROOK_CODE];
+            while (rooksRemaining != 0ULL) {
+                thisRookMask = rooksRemaining & -rooksRemaining;
+                rooksRemaining -= thisRookMask;
+                thisRookSquare = LOG_2_TABLE.get(thisRookMask);
+                if ((whitePieceTypes[PAWN_CODE] & 255ULL << (thisRookSquare & 56)) == 0ULL)
+                    rookOpenFileDiff++;
+            }
+
+            // black rooks
+            rooksRemaining = blackPieceTypes[ROOK_CODE];
+            while (rooksRemaining != 0ULL) {
+                thisRookMask = rooksRemaining & -rooksRemaining;
+                rooksRemaining -= thisRookMask;
+                thisRookSquare = LOG_2_TABLE.get(thisRookMask);
+                if ((blackPieceTypes[PAWN_CODE] & 255ULL << (thisRookSquare & 56)) == 0ULL)
+                    rookOpenFileDiff++;
+            }
+            diffs.push_back(rookOpenFileDiff);
+        }
         // Bishop pair
         if constexpr (includeBishopPair)
             diffs.push_back(doesWhiteHaveBishopPair() - doesBlackHaveBishopPair());
