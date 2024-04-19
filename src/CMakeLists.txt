@@ -9,6 +9,7 @@ find_package(Threads REQUIRED)
 
 add_executable(tuner "main.cpp" "tuner.cpp" "threadpool.cpp" "engines/toy.cpp" "engines/toy_tapered.cpp"
         engines/amethyst_tapered.cpp
-        engines/amethyst_tapered.h)
+        engines/amethyst_tapered.h
+        engines/amethyst_config.h)
 
 target_link_libraries(tuner PRIVATE Threads::Threads)

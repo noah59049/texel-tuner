@@ -16,6 +16,7 @@
 #include "EmptyMagics.h"
 #include "KingSafetyZones.h"
 #include "PawnStructure.h"
+#include "../engines/amethyst_config.h"
 
 /**
  * A chess board class designed to be used to store the board state in matches between 2 engines.
@@ -2366,45 +2367,65 @@ public:
 
         vector<int16_t> diffs;
         // Bishop pair
-        diffs.push_back(doesWhiteHaveBishopPair() - doesBlackHaveBishopPair());
+        if constexpr (includeBishopPair)
+            diffs.push_back(doesWhiteHaveBishopPair() - doesBlackHaveBishopPair());
         // Passed pawn on rank
-        for (int rank = 0; rank < 8; rank++) {
-            diffs.push_back(getWhitePassedPawnCountOnRank(rank) - getBlackPassedPawnCountOnRank(rank));
+        if constexpr (includePassedPawnRanks) {
+            for (int rank = 0; rank < 8; rank++) {
+                diffs.push_back(getWhitePassedPawnCountOnRank(rank) - getBlackPassedPawnCountOnRank(rank));
+            }
         }
         // Passed pawn on file
-        for (int file = 0; file < 8; file++) {
-            diffs.push_back(getWhitePassedPawnCountOnFile(file) - getBlackPassedPawnCountOnFile(file));
+        if constexpr (includePassedPawnFiles) {
+            for (int file = 0; file < 8; file++) {
+                diffs.push_back(getWhitePassedPawnCountOnFile(file) - getBlackPassedPawnCountOnFile(file));
+            }
         }
 
         // Protected passed pawn count
-        diffs.push_back(getWhiteProtectedPassedPawnCount() - getBlackProtectedPassedPawnCount());
+        if constexpr (includeProtectedPassedPawn)
+            diffs.push_back(getWhiteProtectedPassedPawnCount() - getBlackProtectedPassedPawnCount());
 
         // Is it white to move
-        diffs.push_back(isItWhiteToMove ? 1 : 0);
+        if constexpr (includeWhiteToMove)
+            diffs.push_back(isItWhiteToMove ? 1 : -1);
         // Pawn structure
-        //diffs.push_back(getWhitePassedPawnCount() - getBlackPassedPawnCount());
-        diffs.push_back(getWhiteDoubledPawnCount() - getBlackDoubledPawnCount());
-        diffs.push_back(getWhiteIsolatedPawnCount() - getBlackIsolatedPawnCount());
-        // Pawn shield
-        diffs.push_back(getWhitePieceShieldCount() - getBlackPieceShieldCount());
+        if constexpr (includePassedPawn)
+            diffs.push_back(getWhitePassedPawnCount() - getBlackPassedPawnCount());
+        if constexpr (includeDoubledPawn)
+            diffs.push_back(getWhiteDoubledPawnCount() - getBlackDoubledPawnCount());
+        if constexpr (includeIsolatedPawn)
+            diffs.push_back(getWhiteIsolatedPawnCount() - getBlackIsolatedPawnCount());
+        // King shelter
+        if constexpr (includeKingShelter)
+            diffs.push_back(getWhitePieceShieldCount() - getBlackPieceShieldCount());
         // Attacking king zone
-        for (int pieceType = QUEEN_CODE; pieceType <= PAWN_CODE; pieceType++) {
-            diffs.push_back(getWhitePieceTypeKingAttackZone(pieceType) - getBlackPieceTypeKingAttackZone(pieceType));
+        if constexpr (includeKingZoneAttacks) {
+            for (int pieceType = QUEEN_CODE; pieceType <= PAWN_CODE; pieceType++) {
+                diffs.push_back(
+                        getWhitePieceTypeKingAttackZone(pieceType) - getBlackPieceTypeKingAttackZone(pieceType));
+            }
         }
         // Mobility
-        for (int pieceType = QUEEN_CODE; pieceType <= PAWN_CODE; pieceType++) {
-            diffs.push_back(getWhitePieceTypeMobility(pieceType) - getBlackPieceTypeMobility(pieceType));
+        if constexpr (includeMobility) {
+            for (int pieceType = QUEEN_CODE; pieceType <= PAWN_CODE; pieceType++) {
+                diffs.push_back(getWhitePieceTypeMobility(pieceType) - getBlackPieceTypeMobility(pieceType));
+            }
         }
 
-        // king piece square tables
-        for (int square = 0; square < 64; square++) {
-            diffs.push_back(getWhiteKingOnSquareCount(square) - getBlackKingOnSquareCount(square));
-        }
-
-        // non-king piece square tables
-        for (int pieceType = QUEEN_CODE; pieceType <= PAWN_CODE; pieceType++) {
+        // PSTs
+        if constexpr (includePSTs) {
+            // king piece square tables
             for (int square = 0; square < 64; square++) {
-                diffs.push_back(getWhitePieceTypeOnSquareCount(pieceType,square) - getBlackPieceTypeOnSquareCount(pieceType,square));
+                diffs.push_back(getWhiteKingOnSquareCount(square) - getBlackKingOnSquareCount(square));
+            }
+
+            // non-king piece square tables
+            for (int pieceType = QUEEN_CODE; pieceType <= PAWN_CODE; pieceType++) {
+                for (int square = 0; square < 64; square++) {
+                    diffs.push_back(getWhitePieceTypeOnSquareCount(pieceType, square) -
+                                    getBlackPieceTypeOnSquareCount(pieceType, square));
+                }
             }
         }
         return diffs;
